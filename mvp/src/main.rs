@@ -1,14 +1,29 @@
 use rand::prelude::SliceRandom;
 use std::path::{Path, PathBuf};
 use std::fs;
+use std::process::exit;
 use tokio::{
     process::{Child, Command},
     time::{interval, Duration}
 };
 
-async fn reset() {
-    println!("periodic reset");
+struct WallpaperProcess {
+    backend: Box<dyn WallpaperBackend>,
+    child: Option<tokio::process::Child>
 }
+
+trait WallpaperBackend {
+    fn start(&self, media_path: &Path) -> Result<Option<Child>, std::io::Error>;
+
+    fn stop(&self, child: &mut Option<Child>) -> Result<(), std::io::Error>;
+}
+
+impl WallpaperProcess {
+    pub fn start() {
+
+    }
+}
+
 
 pub fn scan_images<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<PathBuf>> {
     let mut images = Vec::new();
@@ -32,37 +47,6 @@ pub fn scan_images<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<PathBuf>> {
     Ok(images)
 }
 
-
-// pub fn scan_images<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<PathBuf>> {
-//     let mut images = Vec::new();
-//
-//     for entry in fs::read_dir(dir)? {
-//         let entry = entry?;
-//         let path = entry.path();
-//
-//         if path.is_file() {
-//             if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-//                 match ext.to_lowercase().as_str() {
-//                     "jpg" | "jpeg" | "png" | "gif" | "webp" | "bmp" | "tiff" => {
-//                         images.push(path);
-//                     }
-//                     _ => {}
-//                 }
-//             }
-//         }
-//     }
-//
-//     Ok(images)
-// }
-
-async fn start_paper() -> Child {
-    Command::new("swaybg")
-        .arg("--folder")
-        .arg(format!("{}/Pictures", std::env::var("HOME").unwrap()))
-        .spawn()
-        .expect("failed to start backend.")
-}
-
 async fn start_paper_with_image<P: AsRef<Path>>(image: P) -> Child {
     Command::new("swaybg")
         .arg("--image")
@@ -75,18 +59,23 @@ async fn start_paper_with_image<P: AsRef<Path>>(image: P) -> Child {
 async fn main() {
     use rand::{rng};
 
-    let mut images = scan_images(
+    let mut img_paths = scan_images(
         format!("{}/Pictures/wallpaper/", std::env::var("HOME").unwrap())
     ).expect("Failed to scan images");
 
-    let mut ticker = interval(Duration::from_secs(5));
-    let mut child = start_paper().await;
+    if img_paths.is_empty() {
+        eprintln!("No images in configured path. Exit.");
+        exit(0)
+    }
 
-    // 随机打乱一次
-    let mut rng = rng();
-    images.shuffle(&mut rng);
+    let mut ticker = interval(Duration::from_secs(5));
+    ticker.tick().await;
+
+    let mut rng_instance = rng();
+    img_paths.shuffle(&mut rng_instance);
 
     let mut idx = 0usize;
+    let mut child = start_paper_with_image(img_paths.get(idx).unwrap()).await;
 
     loop {
         ticker.tick().await;
@@ -103,8 +92,13 @@ async fn main() {
         let _ = child.wait().await;
 
         // 启动新进程
-        child = start_paper_with_image(images.get(idx).unwrap()).await;
+        let img_path = &img_paths[idx];
+        child = start_paper_with_image(img_path).await;
         idx = idx + 1;
+        if idx >= img_paths.len() {
+            idx = 0;
+            img_paths.shuffle(&mut rng_instance);
+        }
     }
 }
 
