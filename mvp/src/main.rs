@@ -1,3 +1,5 @@
+mod wl_info;
+
 use rand::prelude::SliceRandom;
 use std::path::{Path, PathBuf};
 use std::fs;
@@ -48,19 +50,30 @@ pub fn scan_images<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<PathBuf>> {
 }
 
 async fn start_paper_with_image<P: AsRef<Path>>(image: P) -> Child {
-    Command::new("swaybg")
+    let res = Command::new("swaybga")
         .arg("--image")
         .arg(image.as_ref().as_os_str().to_owned())
-        .spawn()
-        .expect("failed to start backend.")
+        .spawn();
+
+    if res.is_err() {
+        eprintln!("Failed to start backend");
+        exit(1)
+    } else {
+        res.unwrap()
+    }
 }
 
 #[tokio::main]
 async fn main() {
     use rand::{rng};
 
-    let mut img_paths = scan_images(
-        format!("{}/Pictures/wallpaper/", std::env::var("HOME").unwrap())
+    let (outputs, seats) = crate::wl_info::get_info();
+    dbg!(outputs);
+    dbg!(seats);
+    
+    // screen_info_scan();
+    let mut img_paths: Vec<PathBuf> = scan_images(
+        format!("{}/图片/Wallpaper/", std::env::var("HOME").unwrap())
     ).expect("Failed to scan images");
 
     if img_paths.is_empty() {
@@ -82,12 +95,11 @@ async fn main() {
 
         println!("timer expired, restarting waypaper");
 
-        // 尝试结束旧进程
+        // Kill old process.
         if let Some(id) = child.id() {
             println!("killing waypaper (pid {})", id);
         }
 
-        // kill 是 async 的
         let _ = child.kill().await;
         let _ = child.wait().await;
 
