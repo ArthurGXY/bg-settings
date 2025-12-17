@@ -16,7 +16,7 @@ struct WallpaperProcess {
 
 trait WallpaperBackend {
     fn start(&self, media_path: &Path) -> Result<Option<Child>, std::io::Error>;
-
+    fn update(&self, media_path: &Path) -> Result<Option<Child>, std::io::Error>;
     fn stop(&self, child: &mut Option<Child>) -> Result<(), std::io::Error>;
 }
 
