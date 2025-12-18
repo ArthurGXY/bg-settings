@@ -1,2 +1,2 @@
-mod state;
-pub use state::get_info;
+mod lib;
+pub use lib::get_info;

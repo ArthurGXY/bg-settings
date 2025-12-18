@@ -1,4 +1,5 @@
 mod wl_info;
+mod backend;
 
 use rand::prelude::SliceRandom;
 use std::path::{Path, PathBuf};
@@ -8,23 +9,6 @@ use tokio::{
     process::{Child, Command},
     time::{interval, Duration}
 };
-
-struct WallpaperProcess {
-    backend: Box<dyn WallpaperBackend>,
-    child: Option<tokio::process::Child>
-}
-
-trait WallpaperBackend {
-    fn start(&self, media_path: &Path) -> Result<Option<Child>, std::io::Error>;
-    fn update(&self, media_path: &Path) -> Result<Option<Child>, std::io::Error>;
-    fn stop(&self, child: &mut Option<Child>) -> Result<(), std::io::Error>;
-}
-
-impl WallpaperProcess {
-    pub fn start() {
-
-    }
-}
 
 
 pub fn scan_images<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<PathBuf>> {
@@ -38,7 +22,6 @@ pub fn scan_images<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<PathBuf>> {
             continue;
         }
 
-        // infer 会读取文件头的一小部分
         if let Ok(Some(kind)) = infer::get_from_path(&path) {
             if kind.mime_type().starts_with("image/") {
                 images.push(path);
