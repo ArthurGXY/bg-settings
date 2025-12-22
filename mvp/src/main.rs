@@ -50,6 +50,8 @@ async fn start_paper_with_image<P: AsRef<Path>>(image: P) -> Child {
 async fn main() {
     use rand::{rng};
 
+    env_logger::init();
+
     let (outputs, seats) = crate::wl_info::get_info();
     dbg!(outputs);
     dbg!(seats);
