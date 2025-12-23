@@ -1,7 +1,18 @@
-# Tauri + React + Typescript
+# A wayland wallpaper orchestrator for wayland
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+It is always been a painful process setting up wallpapers on wayland. This program aims to support multiple backends (swaybg, 
+hyprpaper, awww, mpvpaper, etc.) and provide a unified interface for setting wallpapers.
 
-## Recommended IDE Setup
+## Features Roadmap
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- [x] cli interface (mvp)
+- [ ] static wallpaper backends support
+    - [ ] swaybg backend
+    - [ ] hyprpaper backend
+- [ ] multi-monitor modes
+- [ ] gif/video backends
+    - [ ] mpvpaper
+    - [ ] awww
+- [ ] graphical interface (tauri)
+- [ ] advanced modes
+    - [ ] custom commands for other backends
