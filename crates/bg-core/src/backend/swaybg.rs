@@ -40,6 +40,10 @@ impl WallpaperBackend for SwaybgBackend {
     fn exists(&self) -> bool {
         which("swaybg").is_ok()
     }
+
+    fn name(&self) -> &str {
+        "swaybg"
+    }
 }
 
 impl MultiOutputBackend for SwaybgBackend {

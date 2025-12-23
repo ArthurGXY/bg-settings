@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use tokio::process::Child;
 
 pub enum ImageType {
@@ -34,12 +32,30 @@ pub enum Backend {
     Awww(AwwwBackend)
 }
 
+impl Backend {
+    pub fn exists(&self) -> bool {
+        match self {
+            Backend::Swaybg(backend) => backend.exists(),
+            // Backend::MpvPaper(backend) => backend.exists(),
+            // Backend::Awww(backend) => backend.exists(),
+            _ => false
+        }
+    }
+
+    pub fn available_backends() -> Vec<Box<dyn WallpaperBackend>> {
+        let mut backends: Vec<Box<dyn WallpaperBackend>>  = Vec::new();
+        backends.push(Box::new(SwaybgBackend));
+        backends
+    }
+}
+
 pub struct WallpaperProcess {
     backend: Box<dyn WallpaperBackend>,
     child: Option<tokio::process::Child>
 }
 
 pub trait WallpaperBackend {
+    fn name(&self) -> &str;
     fn start(&self, media_path: &BackendSpawnSpec) -> Result<Child, std::io::Error>;
     // Removed update, move this to HotReload trait. 
     // If no such trait, we stop and restart the backend manually.
