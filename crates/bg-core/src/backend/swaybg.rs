@@ -38,6 +38,7 @@ impl WallpaperBackend for SwaybgBackend {
     }
     
     fn exists(&self) -> bool {
+        debug!("Looking for executable `swaybg`");
         which("swaybg").is_ok()
     }
 

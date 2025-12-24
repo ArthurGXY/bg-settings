@@ -1,5 +1,5 @@
 use std::{collections::HashMap, env};
-
+use std::fmt::Display;
 use wayland_client::{
     Connection, Dispatch, Proxy, QueueHandle, WEnum, backend::ObjectId, protocol::{wl_output::{self, WlOutput}, 
     wl_registry::{self, WlRegistry}, 
@@ -14,6 +14,15 @@ pub struct SeatInfo {
     capabilities: Vec<String>,
 }
 
+impl Display for SeatInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(f, "name: {}", self.name)?;
+        writeln!(f, "seat_name: {}", self.seat_name)?;
+        writeln!(f, "capabilities: {:?}", self.capabilities)?;
+
+        Ok(())
+    }
+}
 
 #[derive(Debug)]
 pub struct OutputInfo {
@@ -30,6 +39,23 @@ pub struct OutputInfo {
     subpixel_orientation: String,
     output_transform: String,
     modes: Vec<OutputMode>,
+}
+
+impl Display for OutputInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(f, "name: {}", self.name)?;
+        writeln!(f, "output_name: {}", self.output_name)?;
+        writeln!(f, "description: {}", self.description)?;
+        writeln!(f, "x: {}, y: {}, scale: {}", self.x, self.y, self.scale)?;
+        writeln!(f, "physical_width: {}, physical_height: {}", self.physical_width, self.physical_height)?;
+        writeln!(f, "make: {}", self.make)?;
+        writeln!(f, "model: {}", self.model)?;
+        writeln!(f, "subpixel_orientation: {}", self.subpixel_orientation)?;
+        writeln!(f, "output_transform: {}", self.output_transform)?;
+        writeln!(f, "modes: {:?}", self.modes)?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug)]

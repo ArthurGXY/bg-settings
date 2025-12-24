@@ -1,4 +1,4 @@
-# A wayland wallpaper orchestrator for wayland
+# A wallpaper orchestrator for wayland
 
 It is always been a painful process setting up wallpapers on wayland. This program aims to support multiple backends (swaybg, 
 hyprpaper, awww, mpvpaper, etc.) and provide a unified interface for setting wallpapers.
