@@ -1,23 +1,23 @@
-use std::{collections::HashMap, env};
 use std::fmt::Display;
+use std::collections::HashMap;
 use wayland_client::{
-    Connection, Dispatch, Proxy, QueueHandle, WEnum, backend::ObjectId, protocol::{wl_output::{self, WlOutput}, 
-    wl_registry::{self, WlRegistry}, 
-    wl_seat::{self, WlSeat}}
+    backend::ObjectId, protocol::{wl_output::{self},
+                                  wl_registry::{self},
+                                  wl_seat::{self}}, Connection, Dispatch, Proxy, QueueHandle, WEnum
 };
 
 
 #[derive(Debug)]
 pub struct SeatInfo {
-    name: u32,
-    seat_name: String,
+    protocol_id: u32,
+    name: String,
     capabilities: Vec<String>,
 }
 
 impl Display for SeatInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(f, "id: {}", self.protocol_id)?;
         writeln!(f, "name: {}", self.name)?;
-        writeln!(f, "seat_name: {}", self.seat_name)?;
         writeln!(f, "capabilities: {:?}", self.capabilities)?;
 
         Ok(())
@@ -26,8 +26,8 @@ impl Display for SeatInfo {
 
 #[derive(Debug)]
 pub struct OutputInfo {
-    name: u32,
-    output_name: String,
+    protocol_id: u32,
+    name: String,
     description: String,
     x: i32,
     y: i32,
@@ -43,8 +43,8 @@ pub struct OutputInfo {
 
 impl Display for OutputInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(f, "id: {}", self.protocol_id)?;
         writeln!(f, "name: {}", self.name)?;
-        writeln!(f, "output_name: {}", self.output_name)?;
         writeln!(f, "description: {}", self.description)?;
         writeln!(f, "x: {}, y: {}, scale: {}", self.x, self.y, self.scale)?;
         writeln!(f, "physical_width: {}, physical_height: {}", self.physical_width, self.physical_height)?;
@@ -126,8 +126,8 @@ impl Dispatch<wl_output::WlOutput, ()> for State {
         let id = proxy.id();
 
         let info = state.outputs.entry(id.clone()).or_insert_with(|| OutputInfo {
-            name: id.protocol_id(),
-            output_name: String::new(),
+            protocol_id: id.protocol_id(),
+            name: String::new(),
             description: String::new(),
             x: 0,
             y: 0,
@@ -143,7 +143,7 @@ impl Dispatch<wl_output::WlOutput, ()> for State {
 
         match event {
             wl_output::Event::Name { name } => {
-                info.output_name = name;
+                info.name = name;
             }
             wl_output::Event::Description { description } => {
                 info.description = description;
@@ -215,27 +215,27 @@ impl Dispatch<wl_seat::WlSeat, ()> for State {
         let id = proxy.id();
 
         let info = state.seat.entry(id.clone()).or_insert_with(|| SeatInfo {
-            name: id.protocol_id(),
-            seat_name: String::new(),
+            protocol_id: id.protocol_id(),
+            name: String::new(),
             capabilities: Vec::new(),
         });
 
         match event {
             wl_seat::Event::Name { name } => {
-                info.seat_name = name;
+                info.name = name;
             }
             wl_seat::Event::Capabilities { capabilities } => {
                 info.capabilities.clear();
 
                 match capabilities {
                     WEnum::Value(caps) => {
-                        if caps == wl_seat::Capability::Keyboard {
+                        if caps.contains(wl_seat::Capability::Keyboard)  {
                             info.capabilities.push("keyboard".into());
                         }
-                        if caps == wl_seat::Capability::Pointer {
+                        if caps.contains(wl_seat::Capability::Pointer) {
                             info.capabilities.push("pointer".into());
                         }
-                        if caps == wl_seat::Capability::Touch {
+                        if caps.contains(wl_seat::Capability::Touch) {
                             info.capabilities.push("touch".into());
                         }
                     }
