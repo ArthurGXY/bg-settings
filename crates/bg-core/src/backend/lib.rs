@@ -42,7 +42,7 @@ impl Backend {
         }
     }
 
-    pub fn available_backends() -> Vec<Box<dyn WallpaperBackend>> {
+    pub fn supported_backends() -> Vec<Box<dyn WallpaperBackend>> {
         let mut backends: Vec<Box<dyn WallpaperBackend>>  = Vec::new();
         backends.push(Box::new(SwaybgBackend));
         backends
@@ -73,7 +73,8 @@ pub trait MultiOutputBackend {
 
 use std::ffi::OsString;
 use std::path::PathBuf;
-
+use std::process::exit;
+use log::{error, info};
 use crate::backend::awww::AwwwBackend;
 use crate::backend::mpvpaper::MpvPaperBackend;
 use crate::backend::swaybg::SwaybgBackend;
@@ -85,6 +86,13 @@ pub struct BackendSpawnSpec {
     pub extra_args: Vec<OsString>,
 }
 
+pub struct MultiMonitorBackendSpawnSpec {
+    pub media: PathBuf,
+    pub mode: WallpaperMode,
+    pub outputs: Vec<OsString>,
+    pub extra_args: Vec<OsString>
+}
+
 pub async fn stop_and_wait(
     backend: &dyn WallpaperBackend,
     mut child: Child,
@@ -92,4 +100,33 @@ pub async fn stop_and_wait(
     backend.stop(&mut child)?;
     child.wait().await?;
     Ok(())
+}
+
+pub fn available_backends() -> Vec<Box<dyn WallpaperBackend>> {
+    info!("Detecting backends");
+    let mut backends: Vec<Box<dyn WallpaperBackend>> = Vec::new();
+    for backend in Backend::supported_backends() {
+        if backend.exists() {
+            info!("Found backend {:?}", backend.name());
+            backends.push(backend);
+        } else {
+            error!("No backend {:?} found", backend.name());
+        }
+    }
+    backends
+}
+
+// get the first backend available.
+// pub fn fallback_backend() -> &'static Box<dyn WallpaperBackend> {
+//     let available_backends = available_backends();
+//     if !available_backends.is_empty() {
+//         available_backends.get(0).unwrap()
+//     } else {
+//         error!("No available backend found");
+//         exit(1);
+//     }
+// }
+
+pub fn get_backend_by_name(name: &String) -> Option<Box<dyn WallpaperBackend>> {
+    available_backends().into_iter().find(|backend| backend.name() == name)
 }

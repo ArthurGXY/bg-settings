@@ -27,7 +27,7 @@ impl Display for SeatInfo {
 #[derive(Debug)]
 pub struct OutputInfo {
     protocol_id: u32,
-    name: String,
+    pub name: String,
     description: String,
     x: i32,
     y: i32,

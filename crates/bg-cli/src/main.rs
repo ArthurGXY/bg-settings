@@ -1,21 +1,25 @@
 mod utils;
+mod interact;
 
 use log::{error, info, trace};
 use env_logger;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use std::env;
+use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::process::exit;
-use bg_core::wl_info;
+use bg_core::{backend, wl_info};
+use bg_core::backend::{available_backends, get_backend_by_name, Backend};
 use bg_core::media::{scan_media, scan_media_recursive, ScanMode};
-use utils::constants::{ListTarget, ANIMATED_MEDIA, HELP, BACKEND, OUTPUT, SEAT, STATIC_MEDIA};
-use utils::functions;
+use utils::constants::{ListTarget, ANIMATED_MEDIA, BACKEND, HELP, OUTPUT, SEAT, STATIC_MEDIA};
 
 #[derive(Parser, Debug)]
 #[command(name="bg-settings", version = "0.1", about = "A wallpaper orchestrator for wayland")]
 struct Cli {
     media_path: Option<PathBuf>,
+
+    backend: Option<String>,
 
     #[clap(short, long)]
     #[clap(default_value_t = false)]
@@ -32,7 +36,10 @@ struct Cli {
 enum Commands {
     List {
         target: Option<ListTarget>
-    }
+    },
+    Setup {
+        outputs: Option<Vec<String>>
+    },
 }
 
 fn main() {
@@ -91,7 +98,7 @@ fn main() {
                         }
 
                         t if t.is_in(&BACKEND) => {
-                            let backends = functions::detect_backends();
+                            let backends = backend::available_backends();
                             print!("Detected backends: ");
                             for backend in backends {
                                 print!("{} ", backend.name())
@@ -112,8 +119,58 @@ fn main() {
             }
         }
         // default: Fill all outputs with random pictures if provided media_path, else noop.
-        None => todo!()
-    }
+        Some(Commands::Setup{
+                 outputs: target_output,
+             }) => {
 
-    // functions::detect_backends();
+            let (outputs, seats) = wl_info::get_info();
+            let existing_outputs;
+            let backends_available = available_backends();
+
+            if backends_available.is_empty() {
+                error!("No available backend found. Supported backends:\n{}",
+                    Backend::supported_backends()
+                    .into_iter()
+                    .map(
+                        |b| b.name().to_string()
+                    ).collect::<Vec<_>>().join("\n")
+                );
+            }
+
+            if let Some(output_targets) = &target_output { // if
+                existing_outputs = outputs.into_iter().filter_map(|t| {
+                    match output_targets.contains(&t.name) {
+                        false => {
+                            error!("Output with name {:?} not found", t.name);
+                            None
+                        },
+                        true => Some(t)
+                    }
+                }).collect::<Vec<_>>();
+            } else { // user did not set desired output, default to all outputs.
+                existing_outputs = outputs
+            }
+
+            let selected_backend;
+
+            if let Some(backend_name) = args.backend { // find the backend user wants
+                match get_backend_by_name(&backend_name) {
+                    Some(available_backend) => selected_backend = &available_backend,
+                    None => {
+                        // todo!();
+                        if backends_available.first().is_some() {
+                            selected_backend = &backends_available.get(0).unwrap();
+                        } else {
+                            error!("Backend not found");
+                        }
+                    }
+                }
+            } else { // user did not provide backend param
+
+            }
+        }
+        None => {
+            error!("No subcommand provided");
+        }
+    }
 }
