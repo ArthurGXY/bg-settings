@@ -29,8 +29,13 @@ impl WallpaperBackend for SwaybgBackend {
             .arg("-i")
             .arg(image)
             ;
+        let cmd_std = &command.as_std();
+        let cmd = format!("{}", vec![
+            cmd_std.get_program().to_str().unwrap(),
+              cmd_std.get_args()
+                  .collect::<Vec<_>>()
+              .join(" ".as_ref()).to_str().unwrap()].join(" "));
 
-        let cmd = format!("{:?}", &command);
         debug!("Constructed command: {}", cmd);
 
         let child_proc = command.spawn()?;

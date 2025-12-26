@@ -1,5 +1,5 @@
 use tokio::process::Child;
-use crate::wl_info;
+use crate::wl;
 use crate::media::MediaKind;
 
 pub enum ImageType {
@@ -97,7 +97,7 @@ use log::{error, info};
 use crate::backend::awww::AwwwBackend;
 use crate::backend::mpvpaper::MpvPaperBackend;
 use crate::backend::swaybg::SwaybgBackend;
-use crate::wl_info::OutputInfo;
+use crate::wl::OutputInfo;
 
 pub struct BackendSpawnSpec {
     pub media: PathBuf,
@@ -136,14 +136,31 @@ pub fn available_backends() -> Vec<Box<dyn WallpaperBackend>> {
     backends
 }
 
-pub fn get_backend_by_name(name: &String) -> Option<Box<dyn WallpaperBackend>> {
-    available_backends().into_iter().find(
-        |backend| backend.name() == name
-    )
+pub fn get_backend_by_name(name: &String, available: Option<Vec<Box<dyn WallpaperBackend>>>) -> Option<Box<dyn WallpaperBackend>> {
+    available.unwrap_or(available_backends())
+        .into_iter().find(
+            |backend| backend.name() == name
+        )
 }
 
 pub fn get_first_backend() -> Box<dyn WallpaperBackend> {
     available_backends().into_iter().find(
         |backend| backend.exists()
     ).unwrap()
+}
+
+pub fn select_backend(
+    requested: Option<String>,
+    available: Vec<Box<dyn WallpaperBackend>>,
+) -> Box<dyn WallpaperBackend>  {
+    if let Some(name) = requested {
+        if let Some(b) = get_backend_by_name(
+            &name, Some(available)
+        ) {
+            return b;
+        }
+        error!("Backend {} not found, falling back.", name);
+    }
+
+    get_first_backend()
 }

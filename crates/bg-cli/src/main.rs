@@ -10,9 +10,9 @@ use std::env;
 use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::process::exit;
-use bg_core::{backend, wl_info};
-use bg_core::wl_info::get_output_by_name;
-use bg_core::backend::{available_backends, get_backend_by_name, get_first_backend, Backend, BackendCapability, BackendSpawnSpec, WallpaperMode};
+use bg_core::{backend, wl};
+use bg_core::wl::get_output_by_name;
+use bg_core::backend::{available_backends, get_backend_by_name, get_first_backend, select_backend, Backend, BackendCapability, BackendSpawnSpec, WallpaperMode};
 use bg_core::media::{scan_media, scan_media_recursive, MediaKind, ScanMode};
 use utils::constants::{ListTarget, ANIMATED_MEDIA, BACKEND, HELP, OUTPUT, SEAT, STATIC_MEDIA};
 use crate::utils::wait_for_shutdown_signal;
@@ -72,14 +72,14 @@ async fn main() {
 
                     match target {
                         t if t.is_in(&SEAT) => {
-                            let (_, seat_info) = wl_info::get_info();
+                            let (_, seat_info) = wl::get_info();
                             for info in seat_info {
                                 println!("{}", info)
                             }
                         }
 
                         t if t.is_in(&OUTPUT) => {
-                            let (output_info, _) = wl_info::get_info();
+                            let (output_info, _) = wl::get_info();
                             for info in output_info {
                                 println!("{}", info)
                             }
@@ -141,7 +141,7 @@ async fn main() {
             // media
             let mut spawn_specs: Vec<BackendSpawnSpec> = Vec::new();
 
-            let (existing_outputs, _) = wl_info::get_info();
+            let (existing_outputs, _) = wl::get_info();
             // let existing_outputs;
             let existing_backends = available_backends();
 
@@ -182,19 +182,7 @@ async fn main() {
                 selected_outputs = existing_outputs
             }
 
-            if let Some(backend_name) = args.backend { // find the backend user wants
-                match get_backend_by_name(&backend_name) {
-                    Some(available_backend) => selected_backend = available_backend,
-                    None => {
-                        if existing_backends.first().is_some() {
-                            // selected_backend = existing_backends.get(0).unwrap();
-                            selected_backend = get_first_backend();
-                        } else {
-                            error!("Backend {} not found", backend_name);
-                        }
-                    }
-                }
-            }
+            selected_backend = select_backend(args.backend, existing_backends);
 
             for o in selected_outputs {
                 info!("Generating spawn specs");

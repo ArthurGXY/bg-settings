@@ -6,6 +6,30 @@ use wayland_client::{
                                   wl_seat::{self}}, Connection, Dispatch, Proxy, QueueHandle, WEnum
 };
 
+#[derive(Debug)]
+pub struct OutputMode {
+    width: i32,
+    height: i32,
+    refresh: i32,
+    flags: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct OutputInfo {
+    pub(crate) protocol_id: u32,
+    pub name: String,
+    pub(crate) description: String,
+    pub(crate) x: i32,
+    pub(crate) y: i32,
+    pub(crate) scale: i32,
+    pub(crate) physical_width: i32,
+    pub(crate) physical_height: i32,
+    pub(crate) make: String,
+    pub(crate) model: String,
+    pub(crate) subpixel_orientation: String,
+    pub(crate) output_transform: String,
+    pub(crate) modes: Vec<OutputMode>,
+}
 
 #[derive(Debug)]
 pub struct SeatInfo {
@@ -22,48 +46,6 @@ impl Display for SeatInfo {
 
         Ok(())
     }
-}
-
-#[derive(Debug)]
-pub struct OutputInfo {
-    protocol_id: u32,
-    pub name: String,
-    description: String,
-    x: i32,
-    y: i32,
-    scale: i32,
-    physical_width: i32,
-    physical_height: i32,
-    make: String,
-    model: String,
-    subpixel_orientation: String,
-    output_transform: String,
-    modes: Vec<OutputMode>,
-}
-
-impl Display for OutputInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        writeln!(f, "id: {}", self.protocol_id)?;
-        writeln!(f, "name: {}", self.name)?;
-        writeln!(f, "description: {}", self.description)?;
-        writeln!(f, "x: {}, y: {}, scale: {}", self.x, self.y, self.scale)?;
-        writeln!(f, "physical_width: {}, physical_height: {}", self.physical_width, self.physical_height)?;
-        writeln!(f, "make: {}", self.make)?;
-        writeln!(f, "model: {}", self.model)?;
-        writeln!(f, "subpixel_orientation: {}", self.subpixel_orientation)?;
-        writeln!(f, "output_transform: {}", self.output_transform)?;
-        writeln!(f, "modes: {:?}", self.modes)?;
-
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub struct OutputMode {
-    width: i32,
-    height: i32,
-    refresh: i32,
-    flags: Vec<String>,
 }
 
 struct State {
@@ -272,6 +254,3 @@ pub fn get_info() -> (Vec<OutputInfo>, Vec<SeatInfo>) {
     )
 }
 
-pub fn get_output_by_name(name: &str) -> Option<OutputInfo> {
-    get_info().0.into_iter().find(|o| {o.name == name})
-}
