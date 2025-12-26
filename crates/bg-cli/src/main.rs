@@ -4,15 +4,18 @@ mod interact;
 use log::{error, info, trace};
 use env_logger;
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use tokio::process::Child;
 
 use std::env;
 use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::process::exit;
 use bg_core::{backend, wl_info};
-use bg_core::backend::{available_backends, get_backend_by_name, Backend};
-use bg_core::media::{scan_media, scan_media_recursive, ScanMode};
+use bg_core::wl_info::get_output_by_name;
+use bg_core::backend::{available_backends, get_backend_by_name, get_first_backend, Backend, BackendCapability, BackendSpawnSpec, WallpaperMode};
+use bg_core::media::{scan_media, scan_media_recursive, MediaKind, ScanMode};
 use utils::constants::{ListTarget, ANIMATED_MEDIA, BACKEND, HELP, OUTPUT, SEAT, STATIC_MEDIA};
+use crate::utils::wait_for_shutdown_signal;
 
 #[derive(Parser, Debug)]
 #[command(name="bg-settings", version = "0.1", about = "A wallpaper orchestrator for wayland")]
@@ -42,12 +45,19 @@ enum Commands {
     },
 }
 
-fn main() {
-    // unsafe { env::set_var("RUST_LOG", "debug"); }
+#[tokio::main]
+async fn main() {
+    unsafe {
+        if env::var("RUST_LOG").is_err() {
+            env::set_var("RUST_LOG", "trace");
+        }
+    }
     env_logger::init();
 
     let args = Cli::parse();
     trace!("Got args: {:?}", args);
+
+    let mut thread_pool: Vec<tokio::process::Child> = Vec::new();
 
     match args.command {
         // Command: List
@@ -78,7 +88,8 @@ fn main() {
                         t if t.is_in(&STATIC_MEDIA) => {
                             if let Ok(media_info) = scan_media(
                                 args.media_path,
-                                ScanMode::StaticImage
+                                MediaKind::StaticImage,
+                                false, None
                             ) {
                                 for info in media_info {
                                     println!("{}", info.to_string_lossy())
@@ -89,7 +100,8 @@ fn main() {
                         t if t.is_in(&ANIMATED_MEDIA) => {
                             if let Ok(media_info) = scan_media(
                                 args.media_path,
-                                ScanMode::DynamicMedia
+                                MediaKind::AnimatedImage,
+                                false, None
                             ) {
                                 for info in media_info {
                                     println!("{}", info.to_string_lossy())
@@ -123,51 +135,122 @@ fn main() {
                  outputs: target_output,
              }) => {
 
-            let (outputs, seats) = wl_info::get_info();
-            let existing_outputs;
-            let backends_available = available_backends();
+            // We need:
+            // backend (wallpaper program),
+            // output (monitor),
+            // media
+            let mut spawn_specs: Vec<BackendSpawnSpec> = Vec::new();
 
-            if backends_available.is_empty() {
-                error!("No available backend found. Supported backends:\n{}",
+            let (existing_outputs, _) = wl_info::get_info();
+            // let existing_outputs;
+            let existing_backends = available_backends();
+
+            let selected_outputs;
+            let mut selected_backend= get_first_backend();
+            let media_path;
+            match args.media_path {
+                Some(path) => media_path = path,
+                None => {
+                    error!("media_path is required for setting up wallpaper.");
+                    exit(1)
+                }
+            };
+
+            if existing_backends.is_empty() { // no available backends
+                error!("No available backend found, terminating. Supported backends:\n{}",
                     Backend::supported_backends()
                     .into_iter()
                     .map(
                         |b| b.name().to_string()
                     ).collect::<Vec<_>>().join("\n")
                 );
+                exit(1)
             }
 
-            if let Some(output_targets) = &target_output { // if
-                existing_outputs = outputs.into_iter().filter_map(|t| {
+            if let Some(output_targets) = &target_output { // if user appoints output
+                selected_outputs = existing_outputs.into_iter().filter_map(|t| {
                     match output_targets.contains(&t.name) {
-                        false => {
-                            error!("Output with name {:?} not found", t.name);
-                            None
-                        },
-                        true => Some(t)
+                        false => None,
+                        true => {
+                            info!("Found output {}...", t.name);
+                            Some(t)
+                        }
                     }
                 }).collect::<Vec<_>>();
             } else { // user did not set desired output, default to all outputs.
-                existing_outputs = outputs
+                info!("No output selected, defaulting to all outputs");
+                selected_outputs = existing_outputs
             }
-
-            let selected_backend;
 
             if let Some(backend_name) = args.backend { // find the backend user wants
                 match get_backend_by_name(&backend_name) {
-                    Some(available_backend) => selected_backend = &available_backend,
+                    Some(available_backend) => selected_backend = available_backend,
                     None => {
-                        // todo!();
-                        if backends_available.first().is_some() {
-                            selected_backend = &backends_available.get(0).unwrap();
+                        if existing_backends.first().is_some() {
+                            // selected_backend = existing_backends.get(0).unwrap();
+                            selected_backend = get_first_backend();
                         } else {
-                            error!("Backend not found");
+                            error!("Backend {} not found", backend_name);
                         }
                     }
                 }
-            } else { // user did not provide backend param
-
             }
+
+            for o in selected_outputs {
+                info!("Generating spawn specs");
+                spawn_specs.push(
+                    BackendSpawnSpec {
+                        media: media_path.clone(),
+                        mode: WallpaperMode::Fit,
+                        output: o,
+                        extra_args: vec![],
+                    }
+                )
+            }
+
+            if selected_backend.capabilities().contains(&BackendCapability::MultiOutput) {
+                info!("Calling start_multi for {}", selected_backend.name());
+                if let Ok(children) = &mut selected_backend.start_multi(spawn_specs) {
+                    info!("Spawned client {}, with media in {:?}", selected_backend.name(), media_path.clone());
+                    thread_pool.append(children);
+                }
+
+            } else {
+                info!("Calling start for {}", selected_backend.name());
+                for spec in spawn_specs {
+                    match selected_backend.start(&spec) {
+                        Ok(c) => {
+                            thread_pool.push(c);
+                            info!("Spawned client {}, with media in {:?}", selected_backend.name(), spec.media);
+                        },
+                        Err(e) => error!("Spawn failed: {}", e)
+                    }
+
+                }
+            }
+            info!("Main function reaching end");
+
+            wait_for_shutdown_signal(
+                || async move {
+                    let mut ok = true;
+                    info!("Received kill signal, exiting.");
+
+                    for mut child in thread_pool {
+                        if let Some(pid) = child.id() {
+                            info!("Killing child thread: {}", pid);
+                        }
+
+                        if child.kill().await.is_err() {
+                            ok = false;
+                        }
+                    }
+
+                    if ok { 0 } else {
+                        error!("Failed terminating all child processes.");
+                        1
+                    }
+                }
+            ).await
         }
         None => {
             error!("No subcommand provided");

@@ -271,3 +271,7 @@ pub fn get_info() -> (Vec<OutputInfo>, Vec<SeatInfo>) {
         state.seat.into_values().collect(),
     )
 }
+
+pub fn get_output_by_name(name: &str) -> Option<OutputInfo> {
+    get_info().0.into_iter().find(|o| {o.name == name})
+}

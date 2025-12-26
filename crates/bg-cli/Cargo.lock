@@ -69,6 +69,7 @@ dependencies = [
  "clap",
  "env_logger",
  "log",
+ "tokio",
 ]
 
 [[package]]

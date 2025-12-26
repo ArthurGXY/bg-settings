@@ -1,7 +1,14 @@
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+
+use infer::is_image;
 use log::{error, info};
+use rand::prelude::IndexedRandom;
+use rand::{rng};
+use rand::seq::index::sample;
 use walkdir::WalkDir;
+use crate::media::detect_media_kind;
+use crate::media::mime::MediaKind;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ScanMode {
@@ -10,69 +17,79 @@ pub enum ScanMode {
 }
 
 
-fn is_dynamic_image(mime: &str) -> bool {
-    matches!(
-        mime,
-        "image/gif"
-            | "image/webp"
-            | "image/apng"
-    )
-}
 
 pub fn scan_media_recursive(
     root: impl AsRef<Path>,
-    mode: ScanMode,
+    filter: MediaKind,
 ) -> std::io::Result<Vec<PathBuf>> {
-    let mut results = Vec::new();
-    let infer = infer::Infer::new();
+    let mut result = Vec::new();
+    scan_dir(root.as_ref(), filter, &mut result)?;
+    Ok(result)
+}
 
-    for entry in WalkDir::new(root).follow_links(true) {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
+fn scan_dir(
+    dir: &Path,
+    filter: MediaKind,
+    out: &mut Vec<PathBuf>,
+) -> std::io::Result<()> {
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
 
-        if !entry.file_type().is_file() {
+        if path.is_dir() {
+            scan_dir(&path, filter, out)?;
             continue;
         }
 
-        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
 
-        let kind = match infer.get_from_path(path) {
-            Ok(Some(k)) => k,
-            _ => continue, // 无法识别的直接忽略
-        };
+        let kind = detect_media_kind(&path);
 
-        let mime = kind.mime_type();
-
-        let matched = match mode {
-            ScanMode::StaticImage => {
-                mime.starts_with("image/")
-                    && !is_dynamic_image(mime)
-            }
-            ScanMode::DynamicMedia => {
-                is_dynamic_image(mime) || mime.starts_with("video/")
-            }
-        };
-
-        if matched {
-            results.push(path.to_path_buf());
+        if filter == MediaKind::Unsupported || kind == filter {
+            out.push(path);
         }
     }
 
-    Ok(results)
+    Ok(())
 }
+pub fn scan_media(root: Option<PathBuf>,
+                  mode: MediaKind,
+                  random: bool,
+                  random_amount: Option<usize>
+) -> Result<Vec<PathBuf>, std::io::Error> {
+    let mut result;
 
-pub fn scan_media(root: Option<PathBuf>, mode: ScanMode) -> Result<Vec<PathBuf>, std::io::Error> {
     if let Some(root) = root {
-        let static_media = scan_media_recursive(
+        let scan_result = scan_media_recursive(
             root,
-            mode
+            mode,
         );
-        match static_media {
+        match scan_result {
             Ok(paths) => {
                 info!("Found {} static media", paths.len());
-                Ok(paths)
+                result = paths;
+
+                let mut randomly_picked = Vec::new();
+
+                if random {
+                    let mut rng = rng();
+                    let random_amount = random_amount.unwrap_or(1);
+
+                    let indices = sample(
+                        &mut rng,
+                        result.len(), random_amount
+                    ).into_vec();
+
+                    for idx in indices {
+                        randomly_picked.push(result.swap_remove(idx));
+                    }
+
+                    Ok(randomly_picked)
+                } else {
+                    Ok(result)
+                }
             }
             Err(e) => {
                 error!("{}", e);

@@ -12,6 +12,7 @@ pub enum ImageType {
     WEBP,
 }
 
+#[derive(PartialEq)]
 pub enum BackendCapability {
     Static,
     Animated,

@@ -1,4 +1,6 @@
 use tokio::process::Child;
+use crate::wl_info;
+use crate::media::MediaKind;
 
 pub enum ImageType {
     APNG,
@@ -10,9 +12,11 @@ pub enum ImageType {
     WEBP,
 }
 
+#[derive(PartialEq)]
 pub enum BackendCapability {
     Static,
     Animated,
+    Video,
     MultiOutput,
     HotReload
 }
@@ -49,6 +53,17 @@ impl Backend {
     }
 }
 
+impl From<MediaKind> for Option<BackendCapability> {
+    fn from(kind: MediaKind) -> Self {
+        match kind {
+            MediaKind::StaticImage => Some(BackendCapability::Static),
+            MediaKind::AnimatedImage => Some(BackendCapability::Animated),
+            MediaKind::Video => Some(BackendCapability::Video),
+            MediaKind::Unsupported | MediaKind::Any => None,
+        }
+    }
+}
+
 pub struct WallpaperProcess {
     backend: Box<dyn WallpaperBackend>,
     child: Option<tokio::process::Child>
@@ -65,6 +80,10 @@ pub trait WallpaperBackend {
         c.start_kill()
     }
     fn capabilities(&self) -> Vec<BackendCapability>;
+    fn start_multi(&self, specs: Vec<BackendSpawnSpec>) -> Result<Vec<Child>, std::io::Error> {
+        error!("Not implemented.");
+        exit(1)
+    }
 }
 
 pub trait MultiOutputBackend {
@@ -78,11 +97,12 @@ use log::{error, info};
 use crate::backend::awww::AwwwBackend;
 use crate::backend::mpvpaper::MpvPaperBackend;
 use crate::backend::swaybg::SwaybgBackend;
+use crate::wl_info::OutputInfo;
 
 pub struct BackendSpawnSpec {
     pub media: PathBuf,
     pub mode: WallpaperMode,
-    pub output: OsString,
+    pub output: OutputInfo,
     pub extra_args: Vec<OsString>,
 }
 
@@ -116,17 +136,14 @@ pub fn available_backends() -> Vec<Box<dyn WallpaperBackend>> {
     backends
 }
 
-// get the first backend available.
-// pub fn fallback_backend() -> &'static Box<dyn WallpaperBackend> {
-//     let available_backends = available_backends();
-//     if !available_backends.is_empty() {
-//         available_backends.get(0).unwrap()
-//     } else {
-//         error!("No available backend found");
-//         exit(1);
-//     }
-// }
-
 pub fn get_backend_by_name(name: &String) -> Option<Box<dyn WallpaperBackend>> {
-    available_backends().into_iter().find(|backend| backend.name() == name)
+    available_backends().into_iter().find(
+        |backend| backend.name() == name
+    )
+}
+
+pub fn get_first_backend() -> Box<dyn WallpaperBackend> {
+    available_backends().into_iter().find(
+        |backend| backend.exists()
+    ).unwrap()
 }
