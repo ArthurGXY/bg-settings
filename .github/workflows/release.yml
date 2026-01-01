@@ -1,0 +1,26 @@
+name: Tag release
+on:
+  workflow_dispatch:
+
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-cli:
+    name: Build CLI program
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            crates
+      - name: install rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: compile cli
+        run: |
+          cargo build --release --manifest-file crates.yml
