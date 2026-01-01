@@ -19,8 +19,11 @@ jobs:
         with:
           sparse-checkout: |
             crates
+      - name: see code (debug)
+        run: |
+          ls -la
       - name: install rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: compile cli
         run: |
-          cargo build --release --manifest-file crates.yml
+          cargo build -A warnings --release --manifest-path crates/bg-cli/Cargo.toml
