@@ -1,14 +1,13 @@
 use std::io::Error;
-use crate::backend::MultiOutputBackend;
 
+use crate::backend::MultiOutputBackend;
+use crate::media::{scan_media, MediaKind};
 use super::{WallpaperBackend, BackendCapability, BackendSpawnSpec};
 
-use std::path::Path;
 use tokio::process::Child;
-use log::{info, error, warn, debug, trace};
-
+use log::{info, error, debug};
 use which::which;
-use crate::media::{scan_media, MediaKind, ScanMode};
+
 
 pub struct SwaybgBackend;
 

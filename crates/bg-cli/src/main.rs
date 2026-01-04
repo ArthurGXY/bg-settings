@@ -1,19 +1,14 @@
 mod utils;
-mod interact;
 
 use log::{error, info, trace};
 use env_logger;
-use clap::{Args, Parser, Subcommand, ValueEnum};
-use tokio::process::Child;
-
+use clap::{Parser, Subcommand};
 use std::env;
-use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::process::exit;
-use bg_core::{backend, wl};
-use bg_core::wl::get_output_by_name;
-use bg_core::backend::{available_backends, get_backend_by_name, get_first_backend, select_backend, Backend, BackendCapability, BackendSpawnSpec, WallpaperMode};
-use bg_core::media::{scan_media, scan_media_recursive, MediaKind, ScanMode};
+use bg_core::{wl, orchestrator, backend};
+use bg_core::backend::WallpaperMode;
+use bg_core::media::{scan_media, MediaKind};
 use utils::constants::{ListTarget, ANIMATED_MEDIA, BACKEND, HELP, OUTPUT, SEAT, STATIC_MEDIA};
 use crate::utils::wait_for_shutdown_signal;
 

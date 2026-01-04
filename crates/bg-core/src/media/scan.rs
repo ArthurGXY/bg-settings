@@ -1,12 +1,9 @@
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
-use infer::is_image;
 use log::{error, info};
-use rand::prelude::IndexedRandom;
 use rand::{rng};
 use rand::seq::index::sample;
-use walkdir::WalkDir;
 use crate::media::detect_media_kind;
 use crate::media::mime::MediaKind;
 
