@@ -12,6 +12,10 @@ use which::which;
 pub struct SwaybgBackend;
 
 impl WallpaperBackend for SwaybgBackend {
+    fn name(&self) -> &str {
+        "swaybg"
+    }
+
     fn start(&self, spec: &BackendSpawnSpec) -> Result<Child, std::io::Error> {
         info!("Starting swaybg backend.");
 
@@ -40,18 +44,14 @@ impl WallpaperBackend for SwaybgBackend {
         let child_proc = command.spawn()?;
         Ok(child_proc)
     }
-    
-    fn capabilities(&self) -> Vec<super::BackendCapability> {
-        vec![BackendCapability::Static]
-    }
-    
+
     fn exists(&self) -> bool {
         debug!("Looking for executable `swaybg`");
         which("swaybg").is_ok()
     }
 
-    fn name(&self) -> &str {
-        "swaybg"
+    fn capabilities(&self) -> Vec<super::BackendCapability> {
+        vec![BackendCapability::Static]
     }
 
     fn start_multi(&self, specs: Vec<BackendSpawnSpec>) -> Result<Vec<Child>, Error> {
