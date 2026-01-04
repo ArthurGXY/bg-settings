@@ -27,3 +27,9 @@ jobs:
       - name: compile cli
         run: |
           cargo build --release --manifest-path crates/bg-cli/Cargo.toml
+      - name: upload binary
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            crates/bg-cli/target/release/bg-cli
