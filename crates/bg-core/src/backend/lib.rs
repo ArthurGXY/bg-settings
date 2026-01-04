@@ -11,7 +11,7 @@ pub enum ImageType {
     WEBP,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum BackendCapability {
     Static,
     Animated,
@@ -20,6 +20,7 @@ pub enum BackendCapability {
     HotReload
 }
 
+#[derive(Clone)]
 pub enum WallpaperMode {
     Stretch, 
     Fit, 
@@ -63,6 +64,8 @@ impl From<MediaKind> for Option<BackendCapability> {
     }
 }
 
+#[allow(unused_variables)]
+#[allow(dead_code)]
 pub struct WallpaperProcess {
     backend: Box<dyn WallpaperBackend>,
     child: Option<tokio::process::Child>
@@ -79,6 +82,8 @@ pub trait WallpaperBackend {
         c.start_kill()
     }
     fn capabilities(&self) -> Vec<BackendCapability>;
+
+    #[allow(unused_variables)]
     fn start_multi(&self, specs: Vec<BackendSpawnSpec>) -> Result<Vec<Child>, std::io::Error> {
         error!("Not implemented.");
         exit(1)

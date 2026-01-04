@@ -2,6 +2,7 @@ use std::fmt::Display;
 use log::info;
 use crate::wl::OutputInfo;
 
+#[allow(dead_code)]
 fn select_outputs(
     existing: Vec<OutputInfo>,
     target: Option<Vec<String>>,

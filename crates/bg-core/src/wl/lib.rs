@@ -6,7 +6,8 @@ use wayland_client::{
                                   wl_seat::{self}}, Connection, Dispatch, Proxy, QueueHandle, WEnum
 };
 
-#[derive(Debug)]
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub struct OutputMode {
     width: i32,
     height: i32,
@@ -14,7 +15,7 @@ pub struct OutputMode {
     flags: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OutputInfo {
     pub(crate) protocol_id: u32,
     pub name: String,
@@ -31,7 +32,7 @@ pub struct OutputInfo {
     pub(crate) modes: Vec<OutputMode>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SeatInfo {
     protocol_id: u32,
     name: String,
@@ -253,4 +254,3 @@ pub fn get_info() -> (Vec<OutputInfo>, Vec<SeatInfo>) {
         state.seat.into_values().collect(),
     )
 }
-
