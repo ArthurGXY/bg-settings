@@ -80,27 +80,37 @@ async fn main() {
                             }
                         }
 
+                        t if t.is_in(&ALL_MEDIA) => {
+                            if let Err(e) = media::list_media(
+                                args.media_path.clone(),
+                                MediaKind::Any,
+                                args.recursive,
+                                args.max_recurse_depth,
+                            ) {
+                                error!("Failed to list all media: {}", e);
+                            }
+                        }
+
                         t if t.is_in(&STATIC_MEDIA) => {
-                            if let Ok(media_info) = scan_media(
-                                args.media_path,
+                            if let Err(e) = media::list_media(
+                                args.media_path.clone(),
                                 MediaKind::StaticImage,
                                 false, None
+                                args.recursive,
+                                args.max_recurse_depth,
                             ) {
-                                for info in media_info {
-                                    println!("{}", info.to_string_lossy())
-                                }
+                                error!("Failed to list static media: {}", e);
                             }
                         }
 
                         t if t.is_in(&ANIMATED_MEDIA) => {
-                            if let Ok(media_info) = scan_media(
-                                args.media_path,
+                            if let Err(e) = media::list_media(
+                                args.media_path.clone(),
                                 MediaKind::AnimatedImage,
-                                false, None
+                                args.recursive,
+                                args.max_recurse_depth,
                             ) {
-                                for info in media_info {
-                                    println!("{}", info.to_string_lossy())
-                                }
+                                error!("Failed to list animated media: {}", e);
                             }
                         }
 

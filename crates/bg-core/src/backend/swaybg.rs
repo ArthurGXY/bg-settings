@@ -19,11 +19,18 @@ impl WallpaperBackend for SwaybgBackend {
     fn start(&self, spec: &BackendSpawnSpec) -> Result<Child, std::io::Error> {
         info!("Starting swaybg backend.");
 
+        let mut scan_config = crate::media::ScanConfig {
+            recurse: false,  // 默认不递归
+            max_recurses: 0, // 默认递归深度为0
+        };
+        
         let image = scan_media(
             Some(spec.media.clone()),
             MediaKind::StaticImage,
-            // randomly pick 1 to ensure only 1 image is selected.
-            true, Some(1))?.get(0).unwrap().clone();
+            true,  // randomly pick 1 to ensure only 1 image is selected.
+            Some(1),
+            &mut scan_config
+        )?.get(0).unwrap().clone();
 
         let mut binding = tokio::process::Command::new("swaybg");
         let command = binding
