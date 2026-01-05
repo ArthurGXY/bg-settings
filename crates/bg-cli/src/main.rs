@@ -38,7 +38,7 @@ enum Commands {
         target: Option<ListTarget>
     },
     Setup {
-        #[clap(help="The desired outputs.")]
+        #[clap(help="The desired outputs. Check the `name` field from `list output` subcommand.")]
         outputs: Option<Vec<String>>
     },
 }
@@ -47,7 +47,11 @@ enum Commands {
 async fn main() {
     unsafe {
         if env::var("RUST_LOG").is_err() {
+            #[cfg(debug_assertions)]
             env::set_var("RUST_LOG", "trace");
+            
+            #[cfg(not(debug_assertions))]
+            env::set_var("RUST_LOG", "info");
         }
     }
     env_logger::init();
