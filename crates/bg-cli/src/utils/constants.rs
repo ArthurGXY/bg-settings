@@ -37,6 +37,11 @@ pub const HELP: [ListTarget; 2] = [
 
 pub const BACKEND: [ListTarget; 2] = [
     ListTarget::Backend, ListTarget::Backends];
+
+pub const ALL_MEDIA: [ListTarget; 7] = [
+    ListTarget::Static, ListTarget::Image, ListTarget::Images,
+    ListTarget::Animated, ListTarget::Video, ListTarget::Videos, ListTarget::Media
+];
 pub const STATIC_MEDIA: [ListTarget; 3] = [
     ListTarget::Static, ListTarget::Image, ListTarget::Images];
 pub const ANIMATED_MEDIA: [ListTarget; 3] = [

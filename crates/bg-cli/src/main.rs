@@ -6,17 +6,17 @@ use clap::{Parser, Subcommand};
 use std::env;
 use std::path::PathBuf;
 use std::process::exit;
-use bg_core::{wl, orchestrator, backend};
+use bg_core::{backend, media, orchestrator, wl};
 use bg_core::backend::WallpaperMode;
-use bg_core::media::{scan_media, MediaKind};
+use bg_core::media::MediaKind;
 use utils::constants::{ListTarget, ANIMATED_MEDIA, BACKEND, HELP, OUTPUT, SEAT, STATIC_MEDIA};
+use crate::utils::constants::ALL_MEDIA;
 use crate::utils::wait_for_shutdown_signal;
 
 #[derive(Parser, Debug)]
 #[command(name="bg-settings", version = "0.1", about = "A wallpaper orchestrator for wayland")]
 struct Cli {
     media_path: Option<PathBuf>,
-
     backend: Option<String>,
 
     #[clap(short, long)]
@@ -24,7 +24,9 @@ struct Cli {
     recursive: bool,
 
     #[clap(short, long)]
-    max_recurse_depth: Option<u8>,
+    #[clap(help = "max recursion depth, where -1 means no limit (default=-1)")]
+    #[clap(default_value_t = -1)]
+    max_recurse_depth: i8,
 
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -36,6 +38,7 @@ enum Commands {
         target: Option<ListTarget>
     },
     Setup {
+        #[clap(help="The desired outputs.")]
         outputs: Option<Vec<String>>
     },
 }
@@ -95,7 +98,6 @@ async fn main() {
                             if let Err(e) = media::list_media(
                                 args.media_path.clone(),
                                 MediaKind::StaticImage,
-                                false, None
                                 args.recursive,
                                 args.max_recurse_depth,
                             ) {

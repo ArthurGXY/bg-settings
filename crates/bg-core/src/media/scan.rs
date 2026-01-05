@@ -10,8 +10,6 @@ pub struct ScanConfig {
     pub max_recurses: isize,
 }
 
-
-
 pub fn scan_media_recursive(
     root: impl AsRef<Path>,
     filter: MediaKind,
