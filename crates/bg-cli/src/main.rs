@@ -8,14 +8,14 @@ use std::path::PathBuf;
 use std::process::exit;
 use bg_core::{backend, media, orchestrator, wl};
 use bg_core::backend::WallpaperMode;
-use bg_core::media::MediaKind;
+use bg_core::media::{MediaKind, ScanConfig};
 use utils::constants::{ListTarget, ANIMATED_MEDIA, BACKEND, HELP, OUTPUT, SEAT, STATIC_MEDIA};
 use crate::utils::constants::ALL_MEDIA;
-use crate::utils::wait_for_shutdown_signal;
+use crate::utils::{expand_media_path, wait_for_shutdown_signal};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(name="bg-settings", version = "0.1", about = "A wallpaper orchestrator for wayland")]
-struct Cli {
+pub(crate) struct Cli {
     media_path: Option<PathBuf>,
     backend: Option<String>,
 
@@ -32,8 +32,8 @@ struct Cli {
     pub command: Option<Commands>,
 }
 
-#[derive(Subcommand, Debug)]
-enum Commands {
+#[derive(Subcommand, Debug, Clone)]
+pub(crate) enum Commands {
     List {
         target: Option<ListTarget>
     },
@@ -145,13 +145,14 @@ async fn main() {
         Some(Commands::Setup{
                  outputs: target_output,
              }) => {
-            let media_path = match args.media_path {
-                Some(path) => path,
-                None => {
-                    error!("media_path is required for setting up wallpaper.");
-                    exit(1)
+            
+            let media_path = expand_media_path(
+                args.media_path.clone(),
+                ScanConfig {
+                    recurse: args.recursive,
+                    max_recurses: args.max_recurse_depth.into(),
                 }
-            };
+            );
 
             match orchestrator::setup_wallpaper(
                 media_path,

@@ -104,7 +104,7 @@ use crate::backend::swaybg::SwaybgBackend;
 use crate::wl::OutputInfo;
 
 pub struct BackendSpawnSpec {
-    pub media: PathBuf,
+    pub media: PathBuf, // backends would assume this must exist. 
     pub mode: WallpaperMode,
     pub output: OutputInfo,
     pub extra_args: Vec<OsString>,
