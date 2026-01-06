@@ -16,19 +16,23 @@ use crate::utils::{expand_media_path, wait_for_shutdown_signal};
 #[derive(Parser, Debug, Clone)]
 #[command(name="bg-settings", version = "0.1", about = "A wallpaper orchestrator for wayland")]
 pub(crate) struct Cli {
+    #[clap(help = "The directory or media file that you want to setup.")]
     media_path: Option<PathBuf>,
+    #[clap(help = "The backend you want to setup with. Supports: ")]
     backend: Option<String>,
 
     #[clap(short, long)]
+    #[clap(help = "Recursively scan all subfolders under <MEDIA_PATH>")]
     #[clap(default_value_t = false)]
     recursive: bool,
 
     #[clap(short, long)]
-    #[clap(help = "max recursion depth, where -1 means no limit (default=-1)")]
+    #[clap(help = "Max recursion depth, where -1 means no limit (default=-1)")]
     #[clap(default_value_t = -1)]
     max_recurse_depth: i8,
 
     #[command(subcommand)]
+    #[clap(help = "One of the supported subcommands.")]
     pub command: Option<Commands>,
 }
 

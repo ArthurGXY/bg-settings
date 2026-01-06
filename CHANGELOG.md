@@ -51,3 +51,14 @@ CLI program source code is at `crate/bg-cli`.
 
 - GUI program is not yet available. It will only be so after
 the CLI program implements all features I planned in README.md.
+
+## [0.1.1] - 2026-01-06
+
+### New
+The recursion control parameters are effective now.
+```
+-r, --recursive
+          
+-m, --max-recurse-depth <MAX_RECURSE_DEPTH>
+    max recursion depth, where -1 means no limit (default=-1) [default: -1]
+```
