@@ -1,7 +1,6 @@
 use std::io::Error;
 
 use crate::backend::MultiOutputBackend;
-use crate::media::{scan_media, MediaKind};
 use super::{WallpaperBackend, BackendCapability, BackendSpawnSpec};
 
 use tokio::process::Child;
