@@ -19,17 +19,33 @@ jobs:
         with:
           sparse-checkout: |
             crates
-      - name: see code (debug)
-        run: |
-          ls -la
+            RELEASES
+
       - name: install rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
       - name: compile cli
         run: |
           cargo build --release --manifest-path crates/bg-cli/Cargo.toml
-      - name: upload binary
+
+      - name: Detect prerelease
+        id: pre
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *"-"* ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Load release notes
+        run: |
+          cp RELEASES/${{ github.ref_name }}.md release.md
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
+          body_path: release.md
+          prerelease: ${{ steps.pre.outputs.prerelease }}
           files: |
             crates/bg-cli/target/release/bg-cli
