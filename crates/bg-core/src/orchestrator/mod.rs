@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use log::{info, error, trace};
+use log::{info, error};
 use rand::prelude::IndexedRandom;
 use crate::backend::{BackendSpawnSpec, WallpaperMode, select_backend, available_backends};
 use crate::wl::{OutputInfo, get_info};
