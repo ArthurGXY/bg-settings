@@ -19,6 +19,7 @@ jobs:
         with:
           sparse-checkout: |
             crates
+            Cargo.toml
       - name: see code (debug)
         run: |
           ls -la
