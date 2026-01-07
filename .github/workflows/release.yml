@@ -19,6 +19,7 @@ jobs:
         with:
           sparse-checkout: |
             crates
+            Cargo.toml
       - name: see code (debug)
         run: |
           ls -la
@@ -26,10 +27,10 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: compile cli
         run: |
-          cargo build --release --manifest-path crates/bg-cli/Cargo.toml
+          cargo build --release
       - name: upload binary
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
           files: |
-            crates/bg-cli/target/release/bg-cli
+            target/release/bg-cli
