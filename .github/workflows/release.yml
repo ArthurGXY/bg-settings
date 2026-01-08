@@ -35,7 +35,7 @@ jobs:
 
       - name: Load release notes
         run: |
-          if [[ "${{ steps.pre.outputs.is_rc }}" == "true" ]]; then
+          if [[ "${{ steps.pre.outputs.prerelease }}" == "true" ]]; then
             git cliff --tag ${{ github.ref_name }} --strip header > changes.md
             sed \
             -e "s/{{version}}/${{ github.ref_name }}/g" \
