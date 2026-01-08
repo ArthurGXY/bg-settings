@@ -19,18 +19,51 @@ jobs:
         with:
           sparse-checkout: |
             crates
-            Cargo.toml
-      - name: see code (debug)
-        run: |
-          ls -la
+            RELEASES
+
       - name: install rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: compile cli
+
+      - name: Detect prerelease
+        id: pre
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *"-"* ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install git-cliff
+        if: steps.pre.outputs.prerelease == 'true'
+        run: |
+          cargo install git-cliff
+
+      - name: Generate release note for rc
+        if: steps.pre.outputs.prerelease == 'true'
+        run: |
+          git cliff --tag ${{ github.ref_name }} --strip header > changes.md
+          sed \
+          -e "s/{{version}}/${{ github.ref_name }}/g" \
+          -e "s/{{prev_version}}/${{ github.ref_name }}/g" \
+          -e "/{{changelog}}/{
+          r changes.md
+          d
+          }" \
+          RELEASES/TEMPLATE_RC.md > release.md
+
+      - name: Load release notes
+        if: steps.pre.outputs.prerelease == 'false'
+        run: |
+          cp RELEASES/${{ github.ref_name }}.md release.md
+
+      - name: Create Release
         run: |
           cargo build --release
       - name: upload binary
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
+          body_path: release.md
+          prerelease: ${{ steps.pre.outputs.prerelease }}
           files: |
             target/release/bg-cli
