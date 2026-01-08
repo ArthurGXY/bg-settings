@@ -11,7 +11,6 @@ owners = []
 push = true
 push-options = []
 consolidate-commits = false
-pre-release-hook = ["git", "cliff", "-o", "CHANGELOG.md", "--tag", "{{version}}"]
 pre-release-commit-message = "chore: Release {{crate_name}} version {{version}}"
 pre-release-replacements = []
 tag-message = "chore(release): Release {{crate_name}} version {{version}}"
