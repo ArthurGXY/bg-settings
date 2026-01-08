@@ -33,21 +33,28 @@ jobs:
             echo "prerelease=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Load release notes
+      - name: Install git-cliff
+        if: steps.pre.outputs.prerelease == 'true'
         run: |
-          if [[ "${{ steps.pre.outputs.prerelease }}" == "true" ]]; then
-            git cliff --tag ${{ github.ref_name }} --strip header > changes.md
-            sed \
-            -e "s/{{version}}/${{ github.ref_name }}/g" \
-            -e "s/{{prev_version}}/${{ github.ref_name }}/g" \
-            -e "/{{changelog}}/{
-            r changes.md
-            d
-            }" \
-            RELEASES/TEMPLATE-RC.md > release.md
-          else
-            cp RELEASES/${{ github.ref_name }}.md release.md
-          fi
+          cargo install git-cliff
+
+      - name: Generate release note for rc
+        if: steps.pre.outputs.prerelease == 'true'
+        run: |
+          git cliff --tag ${{ github.ref_name }} --strip header > changes.md
+          sed \
+          -e "s/{{version}}/${{ github.ref_name }}/g" \
+          -e "s/{{prev_version}}/${{ github.ref_name }}/g" \
+          -e "/{{changelog}}/{
+          r changes.md
+          d
+          }" \
+          RELEASES/TEMPLATE-RC.md > release.md
+
+      - name: Load release notes
+        if: steps.pre.outputs.prerelease == 'false'
+        run: |
+          cp RELEASES/${{ github.ref_name }}.md release.md
 
       - name: Create Release
         run: |
