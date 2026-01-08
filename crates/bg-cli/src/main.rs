@@ -2,16 +2,25 @@ mod utils;
 
 use log::{error, info, trace};
 use env_logger;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, Args, ArgAction};
 use std::env;
 use std::path::PathBuf;
 use std::process::exit;
+
 use bg_core::{backend, media, orchestrator, wl};
 use bg_core::backend::WallpaperMode;
 use bg_core::media::{MediaKind, ScanConfig};
 use utils::constants::{ListTarget, ANIMATED_MEDIA, BACKEND, HELP, OUTPUT, SEAT, STATIC_MEDIA};
 use crate::utils::constants::ALL_MEDIA;
 use crate::utils::{expand_media_path, wait_for_shutdown_signal};
+
+#[derive(Args, Debug, Clone)]
+pub(crate) struct OutputMediaPair {
+    #[clap(help = "Output name (e.g., DP-1, HDMI-1)")]
+    output: String,
+    #[clap(help = "Media path for this output")]
+    media: Option<PathBuf>,
+}
 
 #[derive(Parser, Debug, Clone)]
 #[command(name="bg-settings", version = "0.1", about = "A wallpaper orchestrator for wayland")]
@@ -42,8 +51,14 @@ pub(crate) enum Commands {
         target: Option<ListTarget>
     },
     Setup {
-        #[clap(help="The desired outputs. Check the `name` field from `list output` subcommand.")]
-        outputs: Option<Vec<String>>
+        // #[command(flatten)]
+        #[arg(
+            num_args = 2,
+            action = ArgAction::Append,
+        )]
+        #[clap(help = "123456")]
+        #[clap(long_help = "123456")]
+        outputs: Vec<String>
     },
 }
 
@@ -161,7 +176,7 @@ async fn main() {
             match orchestrator::setup_wallpaper(
                 media_path,
                 args.backend,
-                target_output,
+                Option::from(target_output),
                 WallpaperMode::Fit,
             ).await { // if setup, put into thread_pool and wait for shutdown signal.
                 Ok(children) => {
