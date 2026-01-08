@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "bg-cli"
-version = "0.1.1-rc.2"
+version = "0.1.1-rc.3"
 dependencies = [
  "bg-core",
  "clap",
@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "bg-core"
-version = "0.1.1-rc.2"
+version = "0.1.1-rc.3"
 dependencies = [
  "infer",
  "log",

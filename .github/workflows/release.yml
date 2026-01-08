@@ -49,7 +49,7 @@ jobs:
           r changes.md
           d
           }" \
-          RELEASES/TEMPLATE-RC.md > release.md
+          RELEASES/TEMPLATE_RC.md > release.md
 
       - name: Load release notes
         if: steps.pre.outputs.prerelease == 'false'
