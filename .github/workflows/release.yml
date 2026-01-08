@@ -35,7 +35,19 @@ jobs:
 
       - name: Load release notes
         run: |
-          cp RELEASES/${{ github.ref_name }}.md release.md
+          if [[ "${{ steps.pre.outputs.is_rc }}" == "true" ]]; then
+            git cliff --tag ${{ github.ref_name }} --strip header > changes.md
+            sed \
+            -e "s/{{version}}/${{ github.ref_name }}/g" \
+            -e "s/{{prev_version}}/${{ github.ref_name }}/g" \
+            -e "/{{changelog}}/{
+            r changes.md
+            d
+            }" \
+            RELEASES/TEMPLATE-RC.md > release.md
+          else
+            cp RELEASES/${{ github.ref_name }}.md release.md
+          fi
 
       - name: Create Release
         run: |
